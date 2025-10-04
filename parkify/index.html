@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Parkify - Login</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body {
+    background: linear-gradient(135deg, #0a1a35 0%, #0a0a1a 50%, #000000 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+
+  /* Parkify Logo Style */
+  .parkify-logo {
+    text-align: center;
+    margin-bottom: 30px;
+    transform: translate(0px, 0px); /* Change values as needed */
+    transition: transform 0.3s ease; /* Smooth animation if needed */
+  }
+
+  .parkify-logo h1 {
+    font-size: 3.5rem;       /* Large text */
+    font-weight: 900;        /* Extra bold */
+    color: #fff;             /* White text */
+    text-shadow: 4px 4px 15px rgba(0, 0, 0, 0.9); /* Strong shadow */
+  }
+</style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-6">
+  <script src="common.js"></script>
+
+  <!-- Parkify Logo -->
+  <div class="parkify-logo">
+    <h1>Parkify</h1>
+  </div>
+
+  <div class="w-full max-w-md bg-[rgba(20,30,50,0.85)]
+ p-8 rounded-lg shadow-lg">
+    <h1 class="text-2xl font-bold text-center mb-6 text-white">Login</h1>
+
+    
+    <form id="login-form" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-white mb-1">Username</label>
+        <input type="text" id="username" required class="w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium text-white mb-1">Password</label>
+        <input type="password" id="password" required class="w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+      
+      <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors">Login</button>
+    </form>
+    
+    <div class="mt-4 text-center space-y-2">
+      <button onclick="showAdminLogin()" class="text-blue-400 hover:text-blue-300 text-sm block w-full">Admin Login</button>
+      <a href="forgot-password.html" class="text-blue-400 hover:text-blue-300 text-sm block">Forgot Password?</a>
+    </div>
+    
+    <div class="mt-6 pt-4 border-t border-gray-200">
+      <p class="text-center text-gray-300 text-sm">Don't have an account? <a href="signup.html" class="text-blue-400 hover:text-blue-300">Sign up</a></p>
+    </div>
+    
+    <div id="message" class="mt-4 p-3 rounded-md hidden"></div>
+  </div>
+
+  <!-- Admin Login Modal -->
+  <div id="admin-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+    <div class="bg-white p-6 rounded-lg w-full max-w-md">
+      <h2 class="text-xl font-bold mb-4">Admin Login</h2>
+      <form id="admin-form" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Admin Username</label>
+          <input type="text" id="admin-username" required class="w-full px-3 py-2 border border-gray-300 rounded-md">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Admin Password</label>
+          <input type="password" id="admin-password" required class="w-full px-3 py-2 border border-gray-300 rounded-md">
+        </div>
+        
+        <div class="flex gap-2">
+          <button type="button" onclick="hideAdminLogin()" class="flex-1 bg-gray-300 text-gray-800 py-2 px-4 rounded-md">Cancel</button>
+          <button type="submit" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">Login as Admin</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+<script>
+    // If a user is already logged in, redirect them.
+    if (localStorage.getItem('currentUser')) {
+        window.location.href = 'floors.html';
+    }
+
+    // Handle the main user login form submission
+    document.getElementById('login-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const messageEl = document.getElementById('message');
+
+        const loginData = { username, password };
+
+        try {
+            const response = await fetch('http://localhost:8081/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(loginData)
+            });
+
+            const message = await response.text();
+            messageEl.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700');
+
+            if (response.ok) {
+                // SUCCESS
+                messageEl.classList.add('bg-green-100', 'text-green-700');
+                messageEl.textContent = message;
+                
+                // Save the logged-in user's name to browser storage
+                localStorage.setItem('currentUser', username);
+
+                setTimeout(() => window.location.href = 'floors.html', 1000);
+            } else {
+                // ERROR
+                messageEl.classList.add('bg-red-100', 'text-red-700');
+                messageEl.textContent = message;
+            }
+        } catch (error) {
+            console.error('Network Error:', error);
+            messageEl.classList.add('bg-red-100', 'text-red-700');
+            messageEl.textContent = 'Cannot connect to server.';
+        }
+        messageEl.classList.remove('hidden');
+    });
+
+    // Handle the admin login form submission
+    document.getElementById('admin-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const username = document.getElementById('admin-username').value;
+        const password = document.getElementById('admin-password').value;
+
+        // For this project, we'll keep admin login simple and client-side
+        if (username === 'admin' && password === 'admin123') {
+            localStorage.setItem('currentUser', 'admin'); // Set user as admin
+            window.location.href = 'admin.html';
+        } else {
+            alert('Invalid admin credentials');
+        }
+    });
+
+    // Functions to show/hide the admin modal
+    function showAdminLogin() {
+        document.getElementById('admin-modal').classList.remove('hidden');
+    }
+
+    function hideAdminLogin() {
+        document.getElementById('admin-modal').classList.add('hidden');
+    }
+</script>
+</body>
+</html>
+ 

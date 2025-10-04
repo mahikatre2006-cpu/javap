@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Parking App — Floors</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
+
+<style>
+  body {
+    background-color: #010412;
+    background-image: linear-gradient(180deg, #010412 0%, #0a1a35 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    font-family: 'Orbitron', sans-serif;
+    /* UPDATED: Set a solid, readable base text color */
+    color: #E0E0E0;
+    /* REMOVED: text-shadow */
+  }
+
+  .parkify-logo h1 {
+    font-size: 3.5rem;
+    font-weight: 900;
+    color: #fff;
+    /* REMOVED: text-shadow */
+  }
+
+  .header-content {
+    margin-bottom: 30px;
+  }
+
+  .floors-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 20px;
+  }
+
+  .floor-card {
+    background: rgba(0, 20, 40, 0.5);
+    border: 2px solid #00aaff;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 0 15px #00aaff, inset 0 0 15px rgba(0, 170, 255, 0.5);
+    width: 100%;
+    max-width: 400px;
+    backdrop-filter: blur(5px);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .floor-card:hover {
+      transform: translateY(-5px) scale(1.03);
+      border-color: #9effff;
+      box-shadow: 0 0 35px #00d4ff, inset 0 0 25px rgba(0, 212, 255, 0.6);
+  }
+
+  /* --- HUD Corner Elements --- */
+  .floor-card::before, .floor-card::after {
+      content: '';
+      position: absolute;
+      width: 25px;
+      height: 25px;
+      border-color: #00d4ff;
+      border-style: solid;
+      transition: all 0.3s ease;
+  }
+  .floor-card::before {
+      top: -5px;
+      left: -5px;
+      border-width: 3px 0 0 3px;
+  }
+  .floor-card::after {
+      bottom: -5px;
+      right: -5px;
+      border-width: 0 3px 3px 0;
+  }
+   .floor-card:hover::before, .floor-card:hover::after {
+      border-color: #9effff;
+   }
+
+
+  .floor-card h2 {
+    color: #fff;
+    font-weight: 700;
+    margin-bottom: 12px;
+    font-size: 1.5rem;
+    /* REMOVED: text-shadow */
+  }
+
+  .floor-card p {
+    color: #cdefff;
+    margin-bottom: 20px;
+    font-size: 1rem;
+    font-weight: 400;
+  }
+
+  .floor-card button {
+    background: transparent;
+    color: #00d4ff;
+    border: 2px solid #00d4ff;
+    padding: 12px 16px;
+    border-radius: 8px;
+    width: 100%;
+    font-weight: 700;
+    font-family: 'Orbitron', sans-serif;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 0 10px rgba(0, 212, 255, 0.5);
+    /* REMOVED: text-shadow */
+  }
+
+  .floor-card button:hover {
+    background: #00d4ff;
+    color: #02041b;
+    box-shadow: 0 0 20px #00d4ff;
+    /* REMOVED: text-shadow: none */
+  }
+
+  /* Style header buttons to match */
+  .header-btn {
+      background: transparent;
+      border: 1px solid;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      transition: all 0.2s ease-in-out;
+  }
+  .header-btn:hover {
+      color: #02041b;
+      /* REMOVED: text-shadow: none */
+  }
+  .history-btn {
+      color: #ffee00;
+      border-color: #ffee00;
+      /* REMOVED: text-shadow */
+  }
+  .history-btn:hover {
+      background: #ffee00;
+  }
+  .logout-btn {
+      color: #ff4d4d;
+      border-color: #ff4d4d;
+      /* REMOVED: text-shadow */
+  }
+  .logout-btn:hover {
+      background: #ff4d4d;
+  }
+
+</style>
+</head>
+<body class="flex flex-col p-6">
+
+  <script src="common.js"></script>
+
+  <header>
+    <div class="parkify-logo text-center mb-5">
+      <h1>Parkify</h1>
+    </div>
+
+    <div class="header-content max-w-5xl mx-auto">
+      <h1 class="text-3xl font-bold mb-2 text-white">Select Floor</h1>
+      <div class="flex items-center justify-between mb-6">
+        <span class="text-lg text-gray-300" id="welcome">Hi, User!</span>
+        <div class="flex gap-3">
+          <button class="header-btn history-btn" onclick="goHistory()">History</button>
+          <button class="header-btn logout-btn" onclick="doLogout()">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+  <main class="flex-grow flex items-center justify-center">
+    <div class="floors-container">
+        <div class="floor-card" id="floor1-card">
+          <h2>Floor 1</h2>
+          <p id="floor1-stats">Loading stats...</p>
+          <button onclick="openFloor(1)">Open Floor 1</button>
+        </div>
+
+        <div class="floor-card" id="floor2-card">
+          <h2>Floor 2</h2>
+          <p id="floor2-stats">Loading stats...</p>
+          <button onclick="openFloor(2)">Open Floor 2</button>
+        </div>
+    </div>
+  </main>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+
+<script>
+const api = window.__parking;
+const user = api.getCurrentUser();
+if (!user) { window.location.href = 'index.html'; }
+document.getElementById('welcome').innerText = `Hi, ${user}`;
+
+api.ensureInitFloors();
+api.cleanupExpiredReservations();
+
+// Show Manage button if admin
+const users = api.getUsers();
+const isAdmin = users[user]?.isAdmin;
+if (isAdmin) {
+  // Assuming a manage button could exist in the header
+  const manageBtnContainer = document.querySelector('.header-content .flex.gap-3');
+  if(manageBtnContainer) {
+    const manageBtn = document.createElement('button');
+    manageBtn.className = 'header-btn history-btn'; // Or another style
+    manageBtn.textContent = 'Manage';
+    manageBtn.onclick = goManage;
+    manageBtnContainer.insertBefore(manageBtn, manageBtnContainer.firstChild);
+  }
+}
+
+function goManage(){ window.location.href = 'manage.html'; }
+function goHistory(){ window.location.href = 'history.html'; }
+function doLogout(){ api.logoutUser(); window.location.href = 'index.html'; }
+
+function updateStats() {
+  [1,2].forEach(n => {
+    const f = api.getFloorData(n);
+    const now = new Date();
+    let occupied = 0;
+    let regularCount = 0, vipCount = 0, evCount = 0;
+
+    f.slots.forEach(slot => {
+      if (slot.reservations.some(r => new Date(r.start) <= now && now < new Date(r.end))) occupied++;
+      if (slot.category === 'regular') regularCount++;
+      if (slot.category === 'vip') vipCount++;
+      if (slot.category === 'ev') evCount++;
+    });
+
+    const statsText = `${f.slots.length} slots (${regularCount} Regular, ${vipCount} VIP, ${evCount} EV) — ${occupied} occupied now`;
+    document.getElementById(`floor${n}-stats`).innerText = statsText;
+  });
+}
+
+function openFloor(n){ window.location.href = `slots.html?floor=${n}`; }
+
+updateStats();
+setInterval(() => { api.cleanupExpiredReservations(); updateStats(); }, 30000);
+
+// Updated Anime.js animations for the HUD theme
+document.addEventListener("DOMContentLoaded", function() {
+  anime({
+    targets: '.parkify-logo h1',
+    translateY: [-30, 0],
+    opacity: [0, 1],
+    /* REMOVED: textShadow animation */
+    duration: 1500,
+    easing: 'easeOutExpo'
+  });
+
+  anime({
+    targets: '.floor-card',
+    translateX: [-50, 0],
+    opacity: [0, 1],
+    delay: anime.stagger(300, {start: 400}),
+    duration: 1200,
+    easing: 'easeOutExpo'
+  });
+});
+</script>
+</body>
+</html>

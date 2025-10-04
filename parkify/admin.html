@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Parking App - Admin</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body {
+    background: linear-gradient(135deg, #0a1a35 0%, #0a0a1a 50%, #000000 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+  
+  .tab-content {
+    display: none;
+  }
+  
+  .tab-content.active {
+    display: block;
+  }
+  
+  .tab-button {
+    background: rgba(15, 23, 42, 0.7);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  
+  .tab-button.active {
+    background: rgba(59, 130, 246, 0.9);
+  }
+  
+  .admin-card {
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(5px);
+  }
+</style>
+</head>
+<body class="min-h-screen p-6">
+  <script src="common.js"></script>
+
+  <div class="max-w-6xl mx-auto">
+    <header class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold text-white">Admin Dashboard</h1>
+      <div class="flex items-center gap-3">
+        <span class="text-sm text-gray-300">Admin User</span>
+        <button class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors" onclick="doLogout()">Logout</button>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <div class="flex gap-2 mb-6 flex-wrap">
+      <button class="tab-button active" onclick="showTab('reservations')">Reservations</button>
+      <button class="tab-button" onclick="showTab('slots')">Slots Management</button>
+      <button class="tab-button" onclick="showTab('floors')">Floors Management</button>
+      <button class="tab-button" onclick="showTab('users')">Users</button>
+    </div>
+
+    <!-- Reservations Tab -->
+    <div id="reservations-tab" class="tab-content active">
+      <div class="admin-card">
+        <h2 class="text-xl font-semibold text-white mb-4">All Reservations</h2>
+        <div class="mb-4">
+          <input type="text" id="search-reservations" placeholder="Search reservations..." class="w-full p-2 rounded bg-gray-700 text-white">
+        </div>
+        <div id="reservations-list" class="space-y-3 max-h-96 overflow-auto">
+          <!-- Reservations will be loaded here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Slots Management Tab -->
+    <div id="slots-tab" class="tab-content">
+      <div class="admin-card">
+        <h2 class="text-xl font-semibold text-white mb-4">Manage Slots</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label class="block text-gray-300 mb-2">Select Floor</label>
+            <select id="floor-select" class="w-full p-2 rounded bg-gray-700 text-white" onchange="loadFloorSlots()">
+              <option value="1">Floor 1</option>
+              <option value="2">Floor 2</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-gray-300 mb-2">Slot Actions</label>
+            <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mr-2" onclick="showAddSlotModal()">Add Slot</button>
+            <button class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" onclick="showChangeTypeModal()">Change Type</button>
+          </div>
+        </div>
+        <div id="slots-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Slots will be loaded here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Floors Management Tab -->
+    <div id="floors-tab" class="tab-content">
+      <div class="admin-card">
+        <h2 class="text-xl font-semibold text-white mb-4">Manage Floors</h2>
+        <div class="mb-6">
+          <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" onclick="showAddFloorModal()">Add New Floor</button>
+        </div>
+        <div id="floors-list" class="space-y-4">
+          <!-- Floors will be loaded here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Users Tab -->
+    <div id="users-tab" class="tab-content">
+      <div class="admin-card">
+        <h2 class="text-xl font-semibold text-white mb-4">User Management</h2>
+        <div class="mb-4">
+          <input type="text" id="search-users" placeholder="Search users..." class="w-full p-2 rounded bg-gray-700 text-white">
+        </div>
+        <div id="users-list" class="space-y-3 max-h-96 overflow-auto">
+          <!-- Users will be loaded here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modals will be added here -->
+  <div id="edit-reservation-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+    <div class="bg-gray-800 p-6 rounded-lg w-full max-w-md">
+      <h3 class="text-lg font-semibold text-white mb-4">Edit Reservation</h3>
+      <form id="edit-reservation-form" class="space-y-4">
+        <input type="hidden" id="edit-reservation-id">
+        <div>
+          <label class="block text-gray-300 mb-2">Start Time</label>
+          <input type="datetime-local" id="edit-start-time" class="w-full p-2 rounded bg-gray-700 text-white" required>
+        </div>
+        <div>
+          <label class="block text-gray-300 mb-2">End Time</label>
+          <input type="datetime-local" id="edit-end-time" class="w-full p-2 rounded bg-gray-700 text-white" required>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" onclick="hideModal('edit-reservation-modal')" class="px-4 py-2 bg-gray-600 text-white rounded">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add more modals for other operations -->
+
+<script>
+  const api = window.__parking;
+  
+  // Check if user is admin
+  if (api.getCurrentUser() !== 'admin') {
+    window.location.href = 'index.html';
+  }
+
+  function showTab(tabId) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+      tab.classList.remove('active');
+    });
+    
+    // Show selected tab
+    document.getElementById(`${tabId}-tab`).classList.add('active');
+    
+    // Update active tab button
+    document.querySelectorAll('.tab-button').forEach(button => {
+      button.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Load tab data
+    if (tabId === 'reservations') loadReservations();
+    else if (tabId === 'slots') loadFloorSlots();
+    else if (tabId === 'floors') loadFloors();
+    else if (tabId === 'users') loadUsers();
+  }
+
+  function loadReservations() {
+    const reservationsList = document.getElementById('reservations-list');
+    reservationsList.innerHTML = '<p class="text-gray-300">Loading reservations...</p>';
+    
+    // Get all reservations from both floors
+    let allReservations = [];
+    [1, 2].forEach(floorNum => {
+      const floorData = api.getFloorData(floorNum);
+      floorData.slots.forEach(slot => {
+        slot.reservations.forEach(reservation => {
+          allReservations.push({
+            ...reservation,
+            floor: floorNum,
+            slotId: slot.id
+          });
+        });
+      });
+    });
+    
+    if (allReservations.length === 0) {
+      reservationsList.innerHTML = '<p class="text-gray-300">No reservations found.</p>';
+      return;
+    }
+    
+    // Sort by start time (newest first)
+    allReservations.sort((a, b) => new Date(b.start) - new Date(a.start));
+    
+    reservationsList.innerHTML = '';
+    allReservations.forEach(reservation => {
+      const reservationEl = document.createElement('div');
+      reservationEl.className = 'bg-gray-700 p-3 rounded';
+      reservationEl.innerHTML = `
+        <div class="flex justify-between items-start">
+          <div>
+            <h4 class="font-semibold text-white">Reservation #${reservation.reservationId.slice(-6)}</h4>
+            <p class="text-gray-300 text-sm">User: ${reservation.user}</p>
+            <p class="text-gray-300 text-sm">Floor ${reservation.floor}, Slot ${reservation.slotId}</p>
+            <p class="text-gray-300 text-sm">${api.fmt(reservation.start)} - ${api.fmt(reservation.end)}</p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="editReservation('${reservation.reservationId}', ${reservation.floor}, ${reservation.slotId})" class="bg-yellow-600 text-white px-2 py-1 rounded text-sm">Edit</button>
+            <button onclick="deleteReservation('${reservation.reservationId}')" class="bg-red-600 text-white px-2 py-1 rounded text-sm">Delete</button>
+          </div>
+        </div>
+      `;
+      reservationsList.appendChild(reservationEl);
+    });
+  }
+
+  function editReservation(reservationId, floor, slotId) {
+    const reservation = api.findReservationById(reservationId);
+    if (!reservation) {
+      alert('Reservation not found');
+      return;
+    }
+    
+    document.getElementById('edit-reservation-id').value = reservationId;
+    document.getElementById('edit-start-time').value = formatDateTimeLocal(new Date(reservation.reservation.start));
+    document.getElementById('edit-end-time').value = formatDateTimeLocal(new Date(reservation.reservation.end));
+    
+    showModal('edit-reservation-modal');
+  }
+
+  document.getElementById('edit-reservation-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const reservationId = document.getElementById('edit-reservation-id').value;
+    const startTime = new Date(document.getElementById('edit-start-time').value);
+    const endTime = new Date(document.getElementById('edit-end-time').value);
+    
+    if (startTime >= endTime) {
+      alert('End time must be after start time');
+      return;
+    }
+    
+    const reservation = api.findReservationById(reservationId);
+    if (!reservation) {
+      alert('Reservation not found');
+      return;
+    }
+    
+    // Update reservation
+    const floorData = api.getFloorData(reservation.floor);
+    const slot = floorData.slots[reservation.slotIndex];
+    slot.reservations[reservation.reservationIndex].start = startTime.toISOString();
+    slot.reservations[reservation.reservationIndex].end = endTime.toISOString();
+    
+    api.saveFloorData(reservation.floor, floorData);
+    
+    alert('Reservation updated successfully');
+    hideModal('edit-reservation-modal');
+    loadReservations();
+  });
+
+  function deleteReservation(reservationId) {
+    if (!confirm('Are you sure you want to delete this reservation?')) return;
+    
+    const result = api.removeReservationById(reservationId);
+    if (result) {
+      alert('Reservation deleted successfully');
+      loadReservations();
+    } else {
+      alert('Failed to delete reservation');
+    }
+  }
+
+  function loadFloorSlots() {
+    const floorNum = document.getElementById('floor-select').value;
+    const floorData = api.getFloorData(floorNum);
+    const slotsList = document.getElementById('slots-list');
+    
+    slotsList.innerHTML = '';
+    floorData.slots.forEach(slot => {
+      const slotEl = document.createElement('div');
+      slotEl.className = 'bg-gray-700 p-4 rounded';
+      slotEl.innerHTML = `
+        <h4 class="font-semibold text-white">Slot ${slot.id}</h4>
+        <p class="text-gray-300">Type: ${slot.type === 'two' ? 'Two-Wheeler' : 'Four-Wheeler'}</p>
+        <p class="text-gray-300">Reservations: ${slot.reservations.length}</p>
+        <div class="mt-2">
+          <button onclick="deleteSlot(${floorNum}, ${slot.id})" class="bg-red-600 text-white px-2 py-1 rounded text-sm">Delete</button>
+        </div>
+      `;
+      slotsList.appendChild(slotEl);
+    });
+  }
+
+  function loadFloors() {
+    const floorsList = document.getElementById('floors-list');
+    floorsList.innerHTML = '';
+    
+    [1, 2].forEach(floorNum => {
+      const floorData = api.getFloorData(floorNum);
+      const floorEl = document.createElement('div');
+      floorEl.className = 'bg-gray-700 p-4 rounded';
+      floorEl.innerHTML = `
+        <h4 class="font-semibold text-white">Floor ${floorNum}</h4>
+        <p class="text-gray-300">Slots: ${floorData.slots.length}</p>
+        <p class="text-gray-300">Two-Wheelers: ${floorData.slots.filter(s => s.type === 'two').length}</p>
+        <p class="text-gray-300">Four-Wheelers: ${floorData.slots.filter(s => s.type === 'four').length}</p>
+        <div class="mt-2">
+          <button onclick="editFloor(${floorNum})" class="bg-yellow-600 text-white px-2 py-1 rounded text-sm mr-2">Edit</button>
+          ${floorNum > 2 ? `<button onclick="deleteFloor(${floorNum})" class="bg-red-600 text-white px-2 py-1 rounded text-sm">Delete</button>` : ''}
+        </div>
+      `;
+      floorsList.appendChild(floorEl);
+    });
+  }
+
+  function loadUsers() {
+    const users = api.getUsers();
+    const usersList = document.getElementById('users-list');
+    
+    usersList.innerHTML = '';
+    
+    if (Object.keys(users).length === 0) {
+      usersList.innerHTML = '<p class="text-gray-300">No users found.</p>';
+      return;
+    }
+    
+    Object.keys(users).forEach(username => {
+      if (username === 'admin') return; // Skip admin user
+      
+      const userEl = document.createElement('div');
+      userEl.className = 'bg-gray-700 p-3 rounded flex justify-between items-center';
+      userEl.innerHTML = `
+        <div>
+          <h4 class="font-semibold text-white">${username}</h4>
+        </div>
+        <button onclick="deleteUser('${username}')" class="bg-red-600 text-white px-2 py-1 rounded text-sm">Delete</button>
+      `;
+      usersList.appendChild(userEl);
+    });
+  }
+
+  function deleteUser(username) {
+    if (!confirm(`Are you sure you want to delete user ${username}?`)) return;
+    
+    const users = api.getUsers();
+    delete users[username];
+    api.saveUsers(users);
+    
+    alert('User deleted successfully');
+    loadUsers();
+  }
+
+  function showModal(modalId) {
+    document.getElementById(modalId).classList.remove('hidden');
+  }
+
+  function hideModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
+  }
+
+  function formatDateTimeLocal(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
+
+  function doLogout() {
+    api.logoutUser();
+    window.location.href = 'index.html';
+  }
+
+  // Load initial data
+  loadReservations();
+</script>
+</body>
+</html>

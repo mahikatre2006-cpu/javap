@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Parking App — Slots</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body {
+    background: linear-gradient(135deg, #0a1a35 0%, #0a0a1a 50%, #000000 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+  .parkify-logo {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .parkify-logo h1 {
+    font-size: 3rem;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 3px 3px 10px rgba(0, 0, 0, 0.8);
+  }
+  dialog {
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  }
+  dialog::backdrop {
+    background: rgba(0, 0, 0, 0.7);
+  }
+  input[type="datetime-local"], input[type="text"] {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+  }
+  input[type="datetime-local"]:focus, input[type="text"]:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+  }
+  .parking-grid {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+  .parking-slot {
+    height: 180px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 12px;
+    transition: all 0.2s ease;
+    position: relative; /* Needed for badges */
+  }
+  .parking-slot:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+  .slot-number {
+    font-size: 1.25rem;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .slot-status {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+  }
+  .slot-info {
+    font-size: 0.75rem;
+    text-align: center;
+    margin-top: auto;
+  }
+  .section-divider {
+    border-top: 2px dashed rgba(255, 255, 255, 0.2);
+    margin: 24px 0;
+    grid-column: 1 / -1;
+  }
+  .section-title {
+    grid-column: 1 / -1;
+    padding: 8px 0;
+    margin-bottom: 12px;
+  }
+</style>
+</head>
+<body class="min-h-screen p-6">
+
+  <div class="max-w-6xl mx-auto">
+    <div class="parkify-logo">
+      <h1>Parkify</h1>
+    </div>
+
+    <header class="flex justify-between items-center mb-6">
+      <div>
+        <a href="floors.html" class="text-blue-400 hover:text-blue-300 transition-colors">← Back to floors</a>
+        <h1 id="floor-title" class="text-2xl font-bold mt-2 text-white"></h1>
+      </div>
+      <div class="flex items-center gap-2">
+        <button class="px-3 py-1 bg-yellow-400 rounded hover:bg-yellow-500 transition-colors" onclick="goHistory()">History</button>
+        <button class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors" onclick="doLogout()">Logout</button>
+      </div>
+    </header>
+
+    <section class="mb-6">
+      <p class="text-gray-300" id="floor-info">Loading slots...</p>
+    </section>
+
+    <section id="grid" class="parking-grid"></section>
+  </div>
+
+  <dialog id="reserve-dialog" class="rounded-lg p-0">
+    <form id="reserve-form" class="w-[520px] p-6 space-y-4">
+      <h3 class="text-lg font-semibold text-white">Reserve Slot <span id="reserve-slot-label" class="text-blue-300"></span></h3>
+      <label class="block">
+        <div class="text-sm text-gray-400">Vehicle Number</div>
+        <input id="vehicle-number" type="text" class="w-full border rounded p-2" placeholder="e.g., MH-04-AB-1234" required />
+      </label>
+      <label class="block">
+        <div class="text-sm text-gray-400">Start</div>
+        <input id="reserve-start" type="datetime-local" class="w-full border rounded p-2" required />
+      </label>
+      <label class="block">
+        <div class="text-sm text-gray-400">End</div>
+        <input id="reserve-end" type="datetime-local" class="w-full border rounded p-2" required />
+      </label>
+      <div class="flex justify-end gap-2">
+        <button type="button" id="cancel-reserve" class="px-3 py-1 rounded border border-gray-600 text-white hover:bg-gray-700 transition-colors">Cancel</button>
+        <button type="submit" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors">Confirm</button>
+      </div>
+    </form>
+  </dialog>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const floorNum = parseInt(urlParams.get('floor') || '1', 10);
+    let allSlotsData = []; 
+    let activeSlot = null;
+
+    const gridEl = document.getElementById('grid');
+    const floorTitleEl = document.getElementById('floor-title');
+    const floorInfoEl = document.getElementById('floor-info');
+    const reserveDialog = document.getElementById('reserve-dialog');
+    const reserveForm = document.getElementById('reserve-form');
+
+    const currentUser = localStorage.getItem('currentUser');
+    if (!currentUser) {
+        window.location.href = 'index.html';
+    }
+
+    function goHistory() { window.location.href = 'history.html'; }
+    function doLogout() {
+        localStorage.removeItem('currentUser');
+        window.location.href = 'index.html';
+    }
+
+    async function renderSlots() {
+        floorTitleEl.innerText = `Floor ${floorNum}`;
+        gridEl.innerHTML = '<p class="text-gray-300 col-span-full">Loading slot data...</p>';
+
+        try {
+            const response = await fetch('http://localhost:8081/api/slots');
+            if (!response.ok) throw new Error('Failed to fetch slot data');
+            
+            allSlotsData = await response.json();
+            const slotsForThisFloor = allSlotsData.filter(s => s.floorNumber === floorNum);
+
+            if (slotsForThisFloor.length === 0) {
+                 gridEl.innerHTML = '<p class="text-gray-300 col-span-full">No slots have been added for this floor yet.</p>';
+                 floorInfoEl.innerText = '0 slots on this floor.';
+                 return;
+            }
+
+            gridEl.innerHTML = '';
+            floorInfoEl.innerText = `${slotsForThisFloor.length} total slots on this floor.`;
+
+            const twoWheelerSlots = slotsForThisFloor.filter(s => s.slotType === 'two-wheeler');
+            const fourWheelerRegular = slotsForThisFloor.filter(s => s.slotType === 'four-wheeler' && s.slotCategory === 'regular');
+            const vipSlots = slotsForThisFloor.filter(s => s.slotCategory === 'vip');
+            const evSlots = slotsForThisFloor.filter(s => s.slotCategory === 'ev');
+
+            function createSection(title, slotArray, icon = '') {
+                if (!slotArray.length) return;
+
+                const sectionHeader = document.createElement('h2');
+                sectionHeader.className = 'section-title text-xl font-semibold text-white flex items-center gap-2';
+                sectionHeader.innerHTML = `${icon} ${title}`;
+                gridEl.appendChild(sectionHeader);
+
+                slotArray.sort((a,b) => a.slotNumber - b.slotNumber).forEach(slot => {
+                    const card = document.createElement('div');
+                    
+                    // NOTE: Real-time status (occupied/reserved) is a more advanced feature.
+                    // For now, all slots will show as 'Available'.
+                    const status = 'available';
+                    
+                    let slotColorClass = 'bg-blue-600 border-blue-400 text-white';
+                    if (slot.slotCategory === 'ev') slotColorClass = 'bg-green-600 border-green-400 text-white';
+                    if (slot.slotCategory === 'vip') slotColorClass = 'bg-black border-yellow-400 text-white';
+                    if (slot.slotType === 'two-wheeler') slotColorClass = 'bg-sky-600 border-sky-400 text-white';
+                    
+                    card.className = `parking-slot ${slotColorClass}`;
+                    card.innerHTML = `
+                        <div class="slot-status">
+                            <span class="px-2 py-1 bg-green-500 text-white rounded-full text-xs capitalize">${status}</span>
+                        </div>
+                        <div class="slot-number mt-6">
+                            Slot ${slot.slotNumber}
+                        </div>
+                        <div class="slot-info text-gray-200">
+                            ${slot.slotType.replace('-', ' ')}
+                            <br>
+                            <span class="font-bold">${slot.slotCategory.toUpperCase()}</span>
+                        </div>
+                        <div class="flex justify-center mt-2">
+                            <button class="px-3 py-1 rounded bg-white text-blue-700 text-sm font-semibold hover:bg-gray-200" onclick="openReserveDialog(${slot.id})">
+                                Reserve
+                            </button>
+                        </div>
+                    `;
+                    gridEl.appendChild(card);
+                });
+
+                const divider = document.createElement('div');
+                divider.className = 'section-divider';
+                gridEl.appendChild(divider);
+            }
+
+            createSection('Two-Wheeler Parking', twoWheelerSlots, '🏍️');
+            createSection('Four-Wheeler Regular', fourWheelerRegular, '🚗');
+            createSection('EV Charging Parking', evSlots, '⚡');
+            createSection('VIP Parking', vipSlots, '⭐');
+            
+        } catch (error) {
+            console.error("Error fetching slots:", error);
+            gridEl.innerHTML = '<p class="text-red-400 col-span-full">Error loading slot data from server.</p>';
+        }
+    }
+
+    function openReserveDialog(slotId) {
+        activeSlot = allSlotsData.find(s => s.id === slotId);
+        if (!activeSlot) return;
+
+        document.getElementById('reserve-slot-label').innerText = `Floor ${activeSlot.floorNumber}, Slot ${activeSlot.slotNumber}`;
+        reserveDialog.showModal();
+    }
+
+    reserveForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const vehicleNumber = document.getElementById('vehicle-number').value;
+        const startTime = document.getElementById('reserve-start').value;
+        const endTime = document.getElementById('reserve-end').value;
+
+        // SIMPLIFIED: Using a hardcoded user ID. A real app would get this from the backend.
+        const userId = 1; 
+
+        if (!vehicleNumber || !startTime || !endTime) {
+            alert('Please fill out all fields.');
+            return;
+        }
+
+        const reservationData = {
+            userId: userId,
+            slotId: activeSlot.id,
+            vehicleNumber: vehicleNumber,
+            startTime: startTime,
+            endTime: endTime
+        };
+
+        try {
+            const response = await fetch('http://localhost:8081/api/reservations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(reservationData)
+            });
+
+            const message = await response.text();
+
+            if (response.ok) {
+                alert('Reservation successful!');
+                reserveDialog.close();
+            } else {
+                alert(`Error: ${message}`);
+            }
+        } catch (error) {
+            console.error("Reservation Error:", error);
+            alert('Could not connect to server to make reservation.');
+        }
+    });
+    
+    document.getElementById('cancel-reserve').onclick = () => reserveDialog.close();
+
+    renderSlots();
+</script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Parkify - Sign Up</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body {
+    background: linear-gradient(135deg, #0a1a35 0%, #0a0a1a 50%, #000000 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+  .parkify-logo {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  .parkify-logo h1 {
+    font-size: 3.5rem;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 4px 4px 15px rgba(0, 0, 0, 0.9);
+  }
+</style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-6">
+
+  <div class="parkify-logo">
+    <h1>Parkify</h1>
+  </div>
+
+  <div class="w-full max-w-md bg-[rgba(20,30,50,0.85)] p-8 rounded-lg shadow-lg">
+    <h1 class="text-2xl font-bold text-center mb-6 text-white">Create An Account</h1>
+
+    <form id="signup-form" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-white mb-1">Username</label>
+        <input type="text" id="username" required class="w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium text-white mb-1">Password</label>
+        <input type="password" id="password" required class="w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+      <div class="text-xs text-gray-400 mt-1">
+        Must be at least 8 characters, include one uppercase & one special character.
+      </div>
+      
+      <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors">Sign Up</button>
+    </form>
+    
+    <div class="mt-6 text-center">
+      <p class="text-gray-300 text-sm">Already have an account? <a href="index.html" class="text-blue-400 hover:text-blue-300">Login</a></p>
+    </div>
+    
+    <div id="message" class="mt-4 p-3 rounded-md hidden"></div>
+  </div>
+
+<script>
+  document.getElementById('signup-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const messageEl = document.getElementById('message');
+
+    const userData = {
+      username: username,
+      password: password,
+      isAdmin: false
+    };
+
+    try {
+      const response = await fetch('http://localhost:8081/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData)
+      });
+
+      const message = await response.text();
+      messageEl.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700');
+
+      if (response.ok) {
+        messageEl.classList.add('bg-green-100', 'text-green-700');
+        messageEl.textContent = message;
+        setTimeout(() => window.location.href = 'index.html', 1000);
+      } else {
+        messageEl.classList.add('bg-red-100', 'text-red-700');
+        messageEl.textContent = message;
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      messageEl.classList.add('bg-red-100', 'text-red-700');
+      messageEl.textContent = 'Could not connect to the server. Is it running?';
+    } finally {
+      messageEl.classList.remove('hidden');
+    }
+  });
+</script>
+</body>
+</html>
